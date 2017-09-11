@@ -6,17 +6,8 @@ import ddt
 import waffle
 from django.core.urlresolvers import reverse
 from freezegun import freeze_time
-from lms.djangoapps.verify_student.models import VerificationDeadline
-from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
 from mock import patch
 from nose.plugins.attrib import attr
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.schedules.signals import SCHEDULE_WAFFLE_FLAG
-from openedx.core.djangoapps.self_paced.models import SelfPacedConfiguration
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
-from openedx.core.djangoapps.waffle_utils.testutils import override_waffle_flag
-from openedx.features.course_experience import UNIFIED_COURSE_TAB_FLAG
 from pytz import utc
 
 from commerce.models import CommerceConfiguration
@@ -32,6 +23,15 @@ from courseware.date_summary import (
     CertificateAvailableDate
 )
 from courseware.models import DynamicUpgradeDeadlineConfiguration, CourseDynamicUpgradeDeadlineConfiguration
+from lms.djangoapps.verify_student.models import VerificationDeadline
+from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.schedules.signals import SCHEDULE_WAFFLE_FLAG
+from openedx.core.djangoapps.self_paced.models import SelfPacedConfiguration
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
+from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
+from openedx.core.djangoapps.waffle_utils.testutils import override_waffle_flag
+from openedx.features.course_experience import UNIFIED_COURSE_TAB_FLAG
 from student.tests.factories import CourseEnrollmentFactory, UserFactory, TEST_PASSWORD
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -340,27 +340,6 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
         self.assertFalse(block.is_enabled)
 
     @waffle.testutils.override_switch('certificates.instructor_paced_only', True)
-    def test_no_certificate_available_date_for_audit_course(self):
-        course = create_course_run()
-        audit_user = self.create_user()
-
-        CourseEnrollmentFactory(course_id=course.id, user=audit_user, mode=CourseMode.AUDIT)
-        CourseMode.objects.get(course_id=course.id, mode_slug=CourseMode.VERIFIED).delete()
-
-        course.certificate_available_date = datetime.now(utc) + timedelta(days=7)
-        course.certificates = {
-            u'certificates': [{
-                u'course_title': u'Test',
-                u'name': u'',
-                u'is_active': True,
-            }]
-        }
-        course.save()
-        block = CertificateAvailableDate(course, audit_user)
-        self.assertFalse(block.is_enabled)
-        self.assertNotEqual(block.date, None)
-
-    @waffle.testutils.override_switch('certificates.instructor_paced_only', True)
     def test_certificate_available_date_defined(self):
         course = create_course_run()
         audit_user = self.create_user()
@@ -465,6 +444,7 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
 
 @attr(shard=1)
 class TestScheduleOverrides(SharedModuleStoreTestCase):
+
     def setUp(self):
         super(TestScheduleOverrides, self).setUp()
 
@@ -554,7 +534,7 @@ class TestScheduleOverrides(SharedModuleStoreTestCase):
 
 
 def create_course_run(
-        days_till_start=1, days_till_end=14, days_till_upgrade_deadline=4, days_till_verification_deadline=14,
+    days_till_start=1, days_till_end=14, days_till_upgrade_deadline=4, days_till_verification_deadline=14,
 ):
     """ Create a new course run and course modes.
 
