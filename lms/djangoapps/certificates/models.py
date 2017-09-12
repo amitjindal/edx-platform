@@ -898,7 +898,7 @@ class CertificateGenerationCourseSetting(TimeStampedModel):
             'self_generation_enabled': is_enabled,
             'enabled': is_enabled
         }
-        CertificateGenerationCourseSetting.objects.updates_or_create(
+        CertificateGenerationCourseSetting.objects.update_or_create(
             course_key=course_key,
             default=default
         )
